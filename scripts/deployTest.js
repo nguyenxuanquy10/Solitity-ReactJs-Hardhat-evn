@@ -1,0 +1,73 @@
+// This is a script for deploying your contracts. You can adapt it to deploy
+// yours, or create new ones.
+
+const path = require("path");
+
+async function main() {
+  // This is just a convenience check
+  if (network.name === "hardhat") {
+    console.log(
+      "You are trying to deploy a contract to the Hardhat Network, which" +
+        "gets automatically created and destroyed every time. Use the Hardhat" +
+        " option '--network localhost'"
+    );
+  }
+
+  // ethers is available in the global scope
+  const [deployer, addr1, addr2, addr3] = await ethers.getSigners();
+  console.log(
+    "Deploying the contracts with the account:",
+    await deployer.getAddress()
+  );
+
+  console.log("Account balance:", (await deployer.getBalance()).toString());
+  // await deployer.transfer("0x922ef3810eA3A23D76841Cd5499E381f85253D5B", 100);
+  const Token = await ethers.getContractFactory("Kaba1");
+  const token = await Token.deploy();
+  await token.deployed();
+  await token
+    .connect(deployer)
+    .transfer("0x922ef3810eA3A23D76841Cd5499E381f85253D5B", 50);
+  const balanceOfReceiver = await token.balanceOf(
+    "0x922ef3810eA3A23D76841Cd5499E381f85253D5B"
+  );
+
+  console.log("Token address:", token.address);
+  console.log(balanceOfReceiver);
+  // We also save the contract's artifacts and address in the frontend directory
+  saveFrontendFiles(token);
+}
+
+function saveFrontendFiles(token) {
+  const fs = require("fs");
+  const contractsDir = path.join(
+    __dirname,
+    "..",
+    "frontend",
+    "src",
+    "contracts"
+  );
+
+  if (!fs.existsSync(contractsDir)) {
+    fs.mkdirSync(contractsDir);
+  }
+
+  fs.writeFileSync(
+    path.join(contractsDir, "contract-address.json"),
+    JSON.stringify({ Token: token.address }, undefined, 2)
+  );
+
+  const TokenArtifact = artifacts.readArtifactSync("Kaba1");
+
+  fs.writeFileSync(
+    path.join(contractsDir, "Kaba1.json"),
+    JSON.stringify(TokenArtifact, null, 2)
+  );
+}
+
+main()
+  .then(() => process.exit(0))
+  .catch((error) => {
+    console.error(error);
+    process.exit(1);
+  });
